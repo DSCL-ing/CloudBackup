@@ -81,6 +81,8 @@ namespace ns_cloud_backup
             FileUtil tmp(bf);
             tmp.Compress(bi._arc_path); //如果是同名文件,内容会覆盖
             
+            std::cout<<tmp.FileName()<<":非热点文件,进行压缩处理"<<std::endl;
+            
             //删除原文件
             tmp.Remove();
 

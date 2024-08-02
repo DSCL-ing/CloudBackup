@@ -1,12 +1,12 @@
 #ifndef __DATA_HPP__
 #define __DATA_HPP__
 
-#include"util.hpp"
-#include"config.hpp"
-#include"pthread.h"
+#include<pthread.h>
 #include<unordered_map>
 #include<vector>
 #include<mutex>
+#include"util.hpp"
+#include"config.hpp"
 
 namespace ns_cloud_backup{
 
@@ -57,6 +57,8 @@ namespace ns_cloud_backup{
     private:
       std::string _backup_file;//存储备份信息的文件 "cloud.dat"
       pthread_rwlock_t _rwlock;//读写锁,同时读,互斥写
+
+      //使用url作为key:客户端浏览器下载文件的时候总是以url作为请求。
       std::unordered_map<std::string,BackupInfo> _table; //key是url
 
     public:
@@ -64,14 +66,16 @@ namespace ns_cloud_backup{
       {
         _backup_file = Config::GetInstance()->GetBackupFileName();//cloud.dat
         pthread_rwlock_init(&_rwlock,nullptr);
+        //pthread_mutex_init(&_mtx,nullptr);
         InitLoad();
       } 
       ~DataManager()
       {
         pthread_rwlock_destroy(&_rwlock);
+        //pthread_mutex_destroy(&_mtx);
       }
       
-      //将备份信息读取到内存(并管理)
+      //将备份信息读取到内存
       bool InitLoad()
       {
 
@@ -104,52 +108,64 @@ namespace ns_cloud_backup{
 
       }
      
-      //新增文件的信息结构
+      //新增文件信息节点
       bool Insert(const BackupInfo&info)
       {
         pthread_rwlock_wrlock(&_rwlock);
+        //pthread_mutex_lock(&_mtx);
         _table[info._url] = info;
         pthread_rwlock_unlock(&_rwlock);
+        //pthread_mutex_unlock(&_mtx);
         Storage();
         return true;
       }
-      //更新文件的信息结构
+      
+      //更新文件信息节点
       bool Update(const BackupInfo&info) //目前和insert没有区别
       {
+        //pthread_mutex_lock(&_mtx);
         pthread_rwlock_wrlock(&_rwlock);
         _table[info._url] = info; //覆盖
         pthread_rwlock_unlock(&_rwlock);
+        //pthread_mutex_unlock(&_mtx);
         Storage();
         return true;
       }
-      //根据文件的URL获取信息结构
+      
+      //根据文件的URL获取信息节点
       bool GetOneByURL(const std::string& url,BackupInfo*info)//根据url获取一条info
       {
-        pthread_rwlock_wrlock(&_rwlock);
+        //pthread_mutex_lock(&_mtx);
+        pthread_rwlock_rdlock(&_rwlock);
         auto it = _table.find(url);
         if(it == _table.end()) 
         {
-          info = nullptr;
+          //pthread_mutex_unlock(&_mtx);
           pthread_rwlock_unlock(&_rwlock);
           return false;
         }
         *info = it->second;
+        //pthread_mutex_unlock(&_mtx);
         pthread_rwlock_unlock(&_rwlock);
         return true;
       }
-      //根据文件的实际路径获取信息结构
+      //根据文件的实际路径获取信息节点
       bool GetOneByRealPath(const std::string realpath,BackupInfo*info)//根据realpath获取一条info
       {
-        pthread_rwlock_wrlock(&_rwlock);
+        //pthread_mutex_lock(&_mtx);
+        pthread_rwlock_rdlock(&_rwlock);
+        //pthread_rwlock_rdlock(&_rwlock);
         for(auto it:_table)
         {
           if(it.second._real_path == realpath)
           {
             *info = it.second;
+            //pthread_mutex_unlock(&_mtx);
             pthread_rwlock_unlock(&_rwlock);
             return true; //存在返回真
           }
         }
+        //pthread_mutex_unlock(&_mtx);
         pthread_rwlock_unlock(&_rwlock);
         return false;//文件不存在
       }
@@ -157,10 +173,12 @@ namespace ns_cloud_backup{
       //获取所有文件的信息结构
       bool GetAll(std::vector<BackupInfo> *arry)//获取所有的info放入vector
       {
-        pthread_rwlock_wrlock(&_rwlock);
+        //pthread_mutex_lock(&_mtx);
+        pthread_rwlock_rdlock(&_rwlock);
         if(_table.empty())
         {
           pthread_rwlock_unlock(&_rwlock);
+          //pthread_mutex_unlock(&_mtx);
           return false;
         }
         for(auto it:_table)
@@ -168,10 +186,11 @@ namespace ns_cloud_backup{
           arry->push_back(it.second);
         }
         pthread_rwlock_unlock(&_rwlock);
+        //pthread_mutex_unlock(&_mtx);
         return true;
       }
 
-      //
+      
       bool Storage() //持久化,每有信息改变(Insert,Update)就需要持久化一次
       {
         //1.获取所有配置信息
@@ -199,8 +218,6 @@ namespace ns_cloud_backup{
         fu.SetContent(body);
         return true;
       }
-
-
   };
 
 }

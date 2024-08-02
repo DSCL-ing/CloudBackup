@@ -74,7 +74,7 @@ namespace ns_cloud_backup
         }
       }
       
-      Config(const Config& c) { (void)c; };
+      Config(const Config& c)  = delete;
 
       bool ReadConfigfile()
       {

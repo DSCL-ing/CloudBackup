@@ -35,21 +35,22 @@ namespace ns_cloud_backup
         std::string Download_url = _download_prefix+"(.*)";
         _server.Get(Download_url,Download); //下载
         
-        _server.Get("/test",[](const httplib::Request &req,httplib::Response& rsp){
+        _server.Get("/test",[](const httplib::Request& req,httplib::Response& rsp){
             (void)req;
             rsp.set_content("hello","text/plain");
             rsp.status = 200;
             });
 
         std::cout<<"service start" <<std::endl;
-        _server.listen("0.0.0.0",8888); //任意ip,端口号为8888
+        _server.listen("0.0.0.0",8888); //云服务器不允许直接绑定ip,任意ip(交给云服务器),端口号为8888
         //_server.listen(_server_ip.c_str(),_server_port);
         return true;
       }
 
     private:
-      static void Upload(const httplib::Request &req,httplib::Response& rsp)
+      static void Upload(const httplib::Request& req,httplib::Response& rsp)
       {
+        std::cout<<"Upload..."<<std::endl;
         //1.判断文件是否上传成功
         auto ret = req.has_file("file");
         if(ret == false)
@@ -61,23 +62,20 @@ namespace ns_cloud_backup
         //2.取文件数据
         //注意:multipart上传的文件的正文不全是文件数据,不能直接全部拷贝
         auto file = req.get_file_value("file"); 
-        //MultipartFormData:multipart中的载荷部分
+        //file = httplib::MultipartFormData:multipart中的载荷部分
 
 
-        //上传了个空的,就直接返回,什么都没发生
+        //上传了个空的,就直接返回,什么都不做
         if(file.filename == "")
         {
           return ;
         }
         
         //3.把文件数据放到back_dir中
-        
-        //取得文件存放目录
+        //构建路径
         std::string backup_dir = Config::GetInstance()->GetBackupDir(); 
-        //目录+文件名 = 路径
         std::string realpath = backup_dir+FileUtil(file.filename).FileName();
-
-        //写入(不存在则创建)
+        //写入
         FileUtil fu(realpath);
         fu.SetContent(file.content);
         
@@ -85,11 +83,12 @@ namespace ns_cloud_backup
         BackupInfo bi;
         bi.NewBackupInfo(realpath);
         g_dm->Insert(bi);
+        std::cout<<"文件上传:"<<file.filename<<std::endl;
       }
 
       //ETag:Entity Tag:实体标签
       //验证资源的唯一标识,可以是字符串(弱)和散列值(强)
-      static std::string GetETag(const BackupInfo &info)
+      static std::string GetETag(const BackupInfo& info)
       {
         // ETag:filename-fsize-mtime(字符串)
         FileUtil fu(info._real_path);
@@ -101,7 +100,7 @@ namespace ns_cloud_backup
         return etag;
       }
 
-      static void Download(const httplib::Request &req,httplib::Response& rsp)
+      static void Download(const httplib::Request& req,httplib::Response& rsp)
       {
         //1.获取客户端请求的资源路径path -- req成员
         //2.根据资源路径,获取文件备份信息

@@ -67,73 +67,73 @@ void ConfigTest()
   std::cout<<con->GetBackupFileName()<<std::endl;
 }
 
-void DataInfoTest()
-{
-  cloud::BackupInfo bi;
-  bi.NewBackupInfo("./cloud.cpp");
-  std::cout<<
-    bi._arc_flag<<std::endl<<
-    bi._fsize<<std::endl<<
-    bi._mtime<<std::endl<<
-    bi._atime<<std::endl<<
-    bi._real_path<<std::endl<<
-    bi._arc_path<<std::endl<<
-    bi._url<< std::endl;
-}
-void PrintBackupInfo(cloud::BackupInfo&bi)
-{
-  std::cout<<
-    bi._arc_flag<<std::endl<<
-    bi._fsize<<std::endl<<
-    bi._mtime<<std::endl<<
-    bi._atime<<std::endl<<
-    bi._real_path<<std::endl<<
-    bi._arc_path<<std::endl<<
-    bi._url<< std::endl;
-}
+// void DataInfoTest()
+// {
+//   cloud::BackupInfo bi;
+//   bi.NewBackupInfo("./cloud.cpp");
+//   std::cout<<
+//     bi._arc_flag<<std::endl<<
+//     bi._fsize<<std::endl<<
+//     bi._mtime<<std::endl<<
+//     bi._atime<<std::endl<<
+//     bi._real_path<<std::endl<<
+//     bi._arc_path<<std::endl<<
+//     bi._url<< std::endl;
+// }
+// void PrintBackupInfo(cloud::BackupInfo&bi)
+// {
+//   std::cout<<
+//     bi._arc_flag<<std::endl<<
+//     bi._fsize<<std::endl<<
+//     bi._mtime<<std::endl<<
+//     bi._atime<<std::endl<<
+//     bi._real_path<<std::endl<<
+//     bi._arc_path<<std::endl<<
+//     bi._url<< std::endl;
+// }
 
-void DataManagerTest()
-{
-  cloud::DataManager dm;
-  cloud::BackupInfo bi; 
-  bi.NewBackupInfo("./cloud.cpp"); //目前感觉写成构造函数更好
-  bi._arc_flag = true;
-  dm.Insert(bi);
-  
-  bi.NewBackupInfo("./config.hpp");
-  bi._arc_flag = true;
-  dm.Update(bi);
-  
-  
-  std::cout<<"-----------------get Info by url -------------"<<std::endl;
-  cloud::BackupInfo tmp;
-  dm.GetOneByURL("/download/config.hpp",&tmp);
-  PrintBackupInfo(tmp);
-
-  std::cout<<"-----------------get Info by real path -------------"<<std::endl;
-  dm.GetOneByRealPath("./cloud.cpp",&tmp);
-  PrintBackupInfo(tmp);
-  
-  std::cout<<"-----------------get all Info  -------------"<<std::endl;
-  std::vector<cloud::BackupInfo> v;
-  dm.GetAll(&v);
-  for(auto &info :v)
-  {
-    PrintBackupInfo(info);
-  }
-}
-void DataManagerTest2() //test func:InitLoad()
-{
-  std::cout<<"-----------------get all Info  -------------"<<std::endl;
-  std::vector<cloud::BackupInfo> v;
-  cloud::DataManager dm;
-  dm.GetAll(&v);
-  for(auto &info :v)
-  {
-    PrintBackupInfo(info);
-  }
-  
-}
+//void DataManagerTest()
+//{
+//  cloud::DataManager dm;
+//  cloud::BackupInfo bi; 
+//  bi.NewBackupInfo("./cloud.cpp"); //目前感觉写成构造函数更好
+//  bi._arc_flag = true;
+//  dm.Insert(bi);
+//  
+//  bi.NewBackupInfo("./config.hpp");
+//  bi._arc_flag = true;
+//  dm.Update(bi);
+//  
+//  
+//  std::cout<<"-----------------get Info by url -------------"<<std::endl;
+//  cloud::BackupInfo tmp;
+//  dm.GetOneByURL("/download/config.hpp",&tmp);
+//  PrintBackupInfo(tmp);
+//
+//  std::cout<<"-----------------get Info by real path -------------"<<std::endl;
+//  dm.GetOneByRealPath("./cloud.cpp",&tmp);
+//  PrintBackupInfo(tmp);
+//  
+//  std::cout<<"-----------------get all Info  -------------"<<std::endl;
+//  std::vector<cloud::BackupInfo> v;
+//  dm.GetAll(&v);
+//  for(auto &info :v)
+//  {
+//    PrintBackupInfo(info);
+//  }
+//}
+//void DataManagerTest2() //test func:InitLoad()
+//{
+//  std::cout<<"-----------------get all Info  -------------"<<std::endl;
+//  std::vector<cloud::BackupInfo> v;
+//  cloud::DataManager dm;
+//  dm.GetAll(&v);
+//  for(auto &info :v)
+//  {
+//    PrintBackupInfo(info);
+//  }
+//  
+//}
 
 ns_cloud_backup::DataManager* g_dm;
 
@@ -154,8 +154,9 @@ void ServiceTest()
 
 int main(int argc, char* argv[])
 {
-  (void)argc;
-  (void)argv;
+  g_dm = new ns_cloud_backup::DataManager;
+  //(void)argc;
+  //(void)argv;
   //g_dm = new ns_cloud_backup::DataManager;
   //FileUtilTest(argv[1]);
   //JsonUtilTest();

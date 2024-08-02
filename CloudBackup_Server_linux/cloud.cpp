@@ -10,6 +10,7 @@ namespace cloud = ns_cloud_backup;
 
 void FileUtilTest(std::string filename)
 {
+  (void) filename;
   //ns_cloud_backup::FileUtil fu(filename);
   //std::cout<<fu.FileName()<<std::endl;
   //std::cout<<fu.FileSize()<<std::endl;
@@ -40,7 +41,7 @@ void JsonUtilTest()
   float score[] = {85,88.5,99};
   Json::Value root;
   root["name"] = name;
-  root["age"] = 18;
+  root["age"] = age;
   root["score"].append(score[0]);
   root["score"].append(score[1]);
   root["score"].append(score[2]);
@@ -71,24 +72,24 @@ void DataInfoTest()
   cloud::BackupInfo bi;
   bi.NewBackupInfo("./cloud.cpp");
   std::cout<<
-    bi.arc_flag<<std::endl<<
-    bi.fsize<<std::endl<<
-    bi.mtime<<std::endl<<
-    bi.atime<<std::endl<<
-    bi.real_path<<std::endl<<
-    bi.arc_path<<std::endl<<
-    bi.url<< std::endl;
+    bi._arc_flag<<std::endl<<
+    bi._fsize<<std::endl<<
+    bi._mtime<<std::endl<<
+    bi._atime<<std::endl<<
+    bi._real_path<<std::endl<<
+    bi._arc_path<<std::endl<<
+    bi._url<< std::endl;
 }
 void PrintBackupInfo(cloud::BackupInfo&bi)
 {
   std::cout<<
-    bi.arc_flag<<std::endl<<
-    bi.fsize<<std::endl<<
-    bi.mtime<<std::endl<<
-    bi.atime<<std::endl<<
-    bi.real_path<<std::endl<<
-    bi.arc_path<<std::endl<<
-    bi.url<< std::endl;
+    bi._arc_flag<<std::endl<<
+    bi._fsize<<std::endl<<
+    bi._mtime<<std::endl<<
+    bi._atime<<std::endl<<
+    bi._real_path<<std::endl<<
+    bi._arc_path<<std::endl<<
+    bi._url<< std::endl;
 }
 
 void DataManagerTest()
@@ -96,11 +97,11 @@ void DataManagerTest()
   cloud::DataManager dm;
   cloud::BackupInfo bi; 
   bi.NewBackupInfo("./cloud.cpp"); //目前感觉写成构造函数更好
-  bi.arc_flag = true;
+  bi._arc_flag = true;
   dm.Insert(bi);
   
   bi.NewBackupInfo("./config.hpp");
-  bi.arc_flag = true;
+  bi._arc_flag = true;
   dm.Update(bi);
   
   
@@ -136,7 +137,7 @@ void DataManagerTest2() //test func:InitLoad()
 
 ns_cloud_backup::DataManager* g_dm;
 
-//全局类没必要上智能指针
+//全局对象用不用智能指针无所谓,还可以上单例
 //std::unique_ptr<ns_cloud_backup::DataManager> g_dm(new ns_cloud_backup::DataManager);
 
 void HotTest()
@@ -153,7 +154,9 @@ void ServiceTest()
 
 int main(int argc, char* argv[])
 {
-  g_dm = new ns_cloud_backup::DataManager;
+  (void)argc;
+  (void)argv;
+  //g_dm = new ns_cloud_backup::DataManager;
   //FileUtilTest(argv[1]);
   //JsonUtilTest();
   //ConfigTest();

@@ -10,39 +10,40 @@
 
 namespace ns_cloud_backup{
 
+  //存储备份文件信息的结构
   struct BackupInfo
-  { //备份文件的信息
-    bool arc_flag; //是否被压缩
-    size_t fsize;  //原文件大小
-    time_t mtime;  //last modify修改时间
-    time_t atime;  //last access访问时间
-    std::string real_path; //实际路径
-    std::string arc_path;  //压缩包路径: ./压缩包路径/文件.压缩包后缀名
-    std::string url;  //下载资源路径
+  { 
+    bool _arc_flag; //是否被压缩
+    size_t _fsize;  //原文件大小
+    time_t _mtime;  //last modify修改时间
+    time_t _atime;  //last access访问时间
+    std::string _real_path; //实际路径
+    std::string _arc_path;  //压缩包路径: ./压缩包路径/文件.压缩包后缀名
+    std::string _url;  //下载资源路径
 
+    //构建一个备份文件信息结构
     bool NewBackupInfo(const std::string &realpath) // ./dir/filename
     {
-
       FileUtil fu(realpath);
       if(fu.Exists() == false) 
       {
         std::cout<<"NewBackupInfo : file not exists"<<std::endl;
         return false;
       }
-      fsize = fu.FileSize();
-      mtime = fu.LastMTime(); 
-      atime = fu.LastATime();
+      _fsize = fu.FileSize();
+      _mtime = fu.LastMTime(); 
+      _atime = fu.LastATime();
 
-      arc_flag = false;
-      real_path = realpath;
+      _arc_flag = false;
+      _real_path = realpath;
 
       Config*config = Config::GetInstance();
       std::string arc_dir = config->GetArcDir();
       std::string arc_suffix = config->GetArcSuffix();
       // ./压缩包路径/a.txt.压缩包后缀名
-      arc_path =arc_dir+fu.FileName()+arc_suffix;
+      _arc_path =arc_dir+fu.FileName()+arc_suffix;
       // /download/a.txt
-      url = config->GetUrlPrefix()+ fu.FileName();
+      _url = config->GetUrlPrefix()+ fu.FileName();
 
       return true;
     }
@@ -51,6 +52,13 @@ namespace ns_cloud_backup{
 
   class DataManager
   {
+//读写锁与排他锁(独占锁)不同的是，读写锁在同一时刻可以允许多个读线程方法，但是在写线程访问时，所有的读线程和其它写线程均被阻塞。读写锁维护了一对锁，一个读锁和一个写锁，通过分离读锁和写锁，并发性相比一般的排它锁有了很大的提升。
+//一般情况下，读写锁的性能都会比排它锁好，因为在多数场景读是多于写的。在读多写少的场景中，读写锁提供比排它锁更好的并发性和吞吐量。
+    private:
+      std::string _backup_file;//存储备份信息的文件 "cloud.dat"
+      pthread_rwlock_t _rwlock;//读写锁,同时读,互斥写
+      std::unordered_map<std::string,BackupInfo> _table; //key是url
+
     public:
       DataManager()
       {
@@ -62,22 +70,59 @@ namespace ns_cloud_backup{
       {
         pthread_rwlock_destroy(&_rwlock);
       }
+      
+      //将备份信息读取到内存(并管理)
+      bool InitLoad()
+      {
+
+        //加载到内存
+        FileUtil fu(_backup_file);
+        if(fu.Exists() == false)
+        {
+          std::cout<<R"comment(InitLoad: file "cloud.dat" not found)comment"<<std::endl;
+          return false;
+        }
+        std::string body; 
+        fu.GetContent(&body); //自动扩容
+
+        //反序列化
+        Json::Value root;
+        JsonUtil::UnSerialize(body,&root); //反序列化到json
+        for(int i = 0;i<(int)root.size();i++)
+        {
+          BackupInfo info; 
+          info._arc_flag = root[i]["arc_flag"].asBool();
+          info._fsize = root[i]["fsize"].asInt64();
+          info._atime = root[i]["atime"].asInt64();
+          info._mtime = root[i]["mtime"].asInt64();
+          info._real_path = root[i]["real_path"].asString();
+          info._arc_path = root[i]["arc_path"].asString();
+          info._url = root[i]["url"].asString();
+          Insert(info);
+        }
+        return true;
+
+      }
+     
+      //新增文件的信息结构
       bool Insert(const BackupInfo&info)
       {
         pthread_rwlock_wrlock(&_rwlock);
-        _table[info.url] = info;
+        _table[info._url] = info;
         pthread_rwlock_unlock(&_rwlock);
         Storage();
         return true;
       }
+      //更新文件的信息结构
       bool Update(const BackupInfo&info) //目前和insert没有区别
       {
         pthread_rwlock_wrlock(&_rwlock);
-        _table[info.url] = info; //覆盖
+        _table[info._url] = info; //覆盖
         pthread_rwlock_unlock(&_rwlock);
         Storage();
         return true;
       }
+      //根据文件的URL获取信息结构
       bool GetOneByURL(const std::string& url,BackupInfo*info)//根据url获取一条info
       {
         pthread_rwlock_wrlock(&_rwlock);
@@ -92,12 +137,13 @@ namespace ns_cloud_backup{
         pthread_rwlock_unlock(&_rwlock);
         return true;
       }
+      //根据文件的实际路径获取信息结构
       bool GetOneByRealPath(const std::string realpath,BackupInfo*info)//根据realpath获取一条info
       {
         pthread_rwlock_wrlock(&_rwlock);
         for(auto it:_table)
         {
-          if(it.second.real_path == realpath)
+          if(it.second._real_path == realpath)
           {
             *info = it.second;
             pthread_rwlock_unlock(&_rwlock);
@@ -108,6 +154,7 @@ namespace ns_cloud_backup{
         return false;//文件不存在
       }
 
+      //获取所有文件的信息结构
       bool GetAll(std::vector<BackupInfo> *arry)//获取所有的info放入vector
       {
         pthread_rwlock_wrlock(&_rwlock);
@@ -124,6 +171,7 @@ namespace ns_cloud_backup{
         return true;
       }
 
+      //
       bool Storage() //持久化,每有信息改变(Insert,Update)就需要持久化一次
       {
         //1.获取所有配置信息
@@ -136,13 +184,13 @@ namespace ns_cloud_backup{
         for(auto info : infos)
         {
           Json::Value item;
-          item["fsize"] = (Json::Int64)info.fsize;
-          item["atime"] = (Json::Int64)info.atime;
-          item["mtime"] = (Json::Int64)info.mtime;
-          item["arc_flag"] = info.arc_flag;
-          item["real_path"] = info.real_path;
-          item["arc_path"] = info.arc_path;
-          item["url"] = info.url;
+          item["fsize"] = (Json::Int64)info._fsize;
+          item["atime"] = (Json::Int64)info._atime;
+          item["mtime"] = (Json::Int64)info._mtime;
+          item["arc_flag"] = info._arc_flag;
+          item["real_path"] = info._real_path;
+          item["arc_path"] = info._arc_path;
+          item["url"] = info._url;
           root.append(item);
         }
         std::string body;
@@ -152,38 +200,7 @@ namespace ns_cloud_backup{
         return true;
       }
 
-      bool InitLoad()
-      {
-        FileUtil fu(_backup_file);
-        if(fu.Exists() == false)
-        {
-          std::cout<<R"comment(InitLoad: file "cloud.dat" not found)comment"<<std::endl;
-          return false;
-        }
-        std::string body; 
-        fu.GetContent(&body);
-        Json::Value root;
-        JsonUtil::UnSerialize(body,&root);
-        for(int i = 0;i<(int)root.size();i++)
-        {
-          BackupInfo info; 
-          info.arc_flag = root[i]["arc_flag"].asBool();
-          info.fsize = root[i]["fsize"].asInt64();
-          info.atime = root[i]["atime"].asInt64();
-          info.mtime = root[i]["mtime"].asInt64();
-          info.real_path = root[i]["real_path"].asString();
-          info.arc_path = root[i]["arc_path"].asString();
-          info.url = root[i]["url"].asString();
-          Insert(info);
-        }
-        return true;
 
-      }
-
-    private:
-      std::string _backup_file;//存储备份信息的文件= "cloud.dat"
-      pthread_rwlock_t _rwlock;//读写锁,同时读,互斥写
-      std::unordered_map<std::string,BackupInfo> _table; //key是url
   };
 
 }

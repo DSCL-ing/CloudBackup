@@ -19,6 +19,14 @@
 #include<memory>
 #include<sstream>
 
+//stat
+/*
+  常用的 ACM时间+大小
+           time_t    st_atime;   / time of last access
+           time_t    st_mtime;   / time of last modification
+           time_t    st_ctime;   / time of last status change
+           off_t     st_size;    / total size, in bytes (整型族)
+ */
 
 namespace ns_cloud_backup
 {
@@ -30,9 +38,9 @@ namespace ns_cloud_backup
       private:
         std::string _filename;//文件名称
       public:
-        FileUtil(const std::string& filename):_filename(filename)
-      {
-      }
+        FileUtil(const std::string& filename)
+          :_filename(filename)
+        {}
 
         //返回文件大小,类型int64,能防止文件过大,并且能使用-1等作为错误码
         int64_t FileSize()
@@ -44,7 +52,6 @@ namespace ns_cloud_backup
             return -1;
           }
           return st.st_size;
-
         } 
 
         //文件最后修改时间
@@ -130,7 +137,7 @@ namespace ns_cloud_backup
         }
 
 
-        //将body写入文件
+        //将body写入文件 -- 覆盖
         bool SetContent(const std::string &body)
         {
           //1.打开文件
@@ -154,20 +161,50 @@ namespace ns_cloud_backup
           return true;
         }
 
+        //删除自己
         bool Remove()
         {
           if(Exists() == false)
           {
             return true;
           }
+          //C API 删除一个文件
           remove(_filename.c_str());
           return true;
         }
 
+
+        //返回文件是否存在. ---实例是文件,返回自己是否存在
+        bool Exists()
+        {
+          return fs::exists(_filename);
+        }
+
+
+        //创建文件,连带目录
+        bool CreateDirectory()
+        {
+          if(this->Exists() == true) return true;//判断文件是否存在,不存在则创建之
+          return fs::create_directories(_filename);
+        }
+
+        //扫面目录中的文件. 实例是目录
+        bool ScanDirectory(std::vector<std::string> &array) //引用一个文件数组,存储已存在文件的文件名
+        {
+          for(auto& p: fs::directory_iterator(_filename)) //语义:遍历filename所在目录的所有文件(包括目录)
+          {
+            if(!fs::is_directory(p))
+              array.push_back(p.path().relative_path().string()); //返回相对路径的字符串
+            //array.push_back(fs::path(p).relative_path().string());
+          }
+          return true;
+        }
+
+        //压缩
         bool Compress(const std::string &packname)
         {
           /*
-             util的实例是一个要压缩的文件. 接收的参数是压缩包包名
+             fileUtil管理的主要是一个要压缩/解压的文件. 接收的参数是压缩包包名
              Compress的工作是,将实例的内容提取出来,压缩,然后放到新文件
              */
           //1.将文件内容提取至缓冲区
@@ -217,31 +254,6 @@ namespace ns_cloud_backup
           return true;
         }  // Uncompress __End;
 
-        //返回文件是否存在. ---实例是文件,返回自己是否存在
-        bool Exists()
-        {
-          return fs::exists(_filename);
-        }
-
-
-        //创建文件,连带目录
-        bool CreateDirectory()
-        {
-          if(this->Exists() == true) return true;//判断文件是否存在,不存在则创建之
-          return fs::create_directories(_filename);
-        }
-
-        //扫面目录中的文件. 实例是目录
-        bool ScanDirectory(std::vector<std::string> &array)
-        {
-          for(auto& p: fs::directory_iterator(_filename)) //语义:遍历filename所在目录的所有文件(包括目录)
-          {
-            if(fs::is_directory(p) == false)
-              array.push_back(p.path().relative_path().string()); //返回相对路径的字符串
-            //array.push_back(fs::path(p).relative_path().string());
-          }
-          return true;
-        }
 
     };//class FileUtil ___End;
 
@@ -266,9 +278,11 @@ namespace ns_cloud_backup
         }
         static bool UnSerialize(const std::string&str,Json::Value *root)
         {
-          Json::CharReaderBuilder crb;
+          Json::CharReaderBuilder crb; //字节读入 建造者
           std::unique_ptr<Json::CharReader> cr(crb.newCharReader());
-          std::string err;
+          std::string err; //error message
+          //解析--反序列化
+          //parse(const char* beg,const char* end, Json::Value* root,std::string*)
           int ret = cr->parse(str.c_str(),str.c_str()+str.size(),root,&err);
           if(ret <0)
           {

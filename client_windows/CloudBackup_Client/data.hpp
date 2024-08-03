@@ -1,4 +1,4 @@
-#ifndef __DATA_HPP__
+ï»¿#ifndef __DATA_HPP__
 #define __DATA_HPP__
 
 #include"util.hpp"
@@ -17,14 +17,14 @@ namespace ns_cloud_backup
                 InitLoad();
             }
 
-            bool Storage()//³Ö¾Ã»¯´æ´¢
+            bool Storage()//æŒä¹…åŒ–å­˜å‚¨
             {
-                //1.»ñÈ¡ËùÓĞ±¸·İĞÅÏ¢
-                //2.½«ËùÓĞĞÅÏ¢×éÖ¯³É³Ö¾Ã»¯´æ´¢µÄ¸ñÊ½
-                //3.³Ö¾Ã»¯´æ´¢
+                //1.è·å–æ‰€æœ‰å¤‡ä»½ä¿¡æ¯
+                //2.å°†æ‰€æœ‰ä¿¡æ¯ç»„ç»‡æˆæŒä¹…åŒ–å­˜å‚¨çš„æ ¼å¼
+                //3.æŒä¹…åŒ–å­˜å‚¨
 
                //std::string body;
-                std::stringstream ss; //×Ö·û´®Á÷×éÖ¯¸ñÊ½¸ü·½±ã 
+                std::stringstream ss; //å­—ç¬¦ä¸²æµç»„ç»‡æ ¼å¼æ›´æ–¹ä¾¿ 
                 for (auto& pair : _table)
                 {
                     //body+=pair.first;
@@ -40,55 +40,55 @@ namespace ns_cloud_backup
 
             int Split(const std::string& str, const std::string& sep, std::vector<std::string>* arry)
             {
-                //Î§ÈÆfindºÍsubstr,½«×Ö·û´®·Ö¸î³ÉÒ»¸ö¸öÔªËØ
+                //å›´ç»•findå’Œsubstr,å°†å­—ç¬¦ä¸²åˆ†å‰²æˆä¸€ä¸ªä¸ªå…ƒç´ 
                 int count = 0;
                 size_t idx = 0, pos = 0;
                 //while (idx < str.size())
-                while (true) //ËÀÑ­»·ºÃ¿ØÖÆ,¼õÉÙ¿¼ÂÇ±ß½ç
+                while (true) //æ­»å¾ªç¯å¥½æ§åˆ¶,å‡å°‘è€ƒè™‘è¾¹ç•Œ
                 {
-                    pos = str.find(sep, idx);//find(Òª²éÕÒµÄ×Ó´®,²éÕÒµÄÆğÊ¼Î»ÖÃ)
-                    if (pos == std::string::npos) //ÕÒ²»µ½ÁË,ËµÃ÷ÊÇ×îºóÒ»¶Î,ÔÚÑ­»·ÍâÖ´ĞĞ×îºóµÄ²åÈë "SEP str"
+                    pos = str.find(sep, idx);//find(è¦æŸ¥æ‰¾çš„å­ä¸²,æŸ¥æ‰¾çš„èµ·å§‹ä½ç½®)
+                    if (pos == std::string::npos) //æ‰¾ä¸åˆ°äº†,è¯´æ˜æ˜¯æœ€åä¸€æ®µ,åœ¨å¾ªç¯å¤–æ‰§è¡Œæœ€åçš„æ’å…¥ "SEP str"
                     {
                         break;
                     }
-                    if (idx == pos) // ·ÀÖ¹ÒòÎªÁ¬ĞøµÄ·Ö¸ô·û¶ø²åÈë¿Õ°××Ó´® "... str SEP SEP str ..."
+                    if (idx == pos) // é˜²æ­¢å› ä¸ºè¿ç»­çš„åˆ†éš”ç¬¦è€Œæ’å…¥ç©ºç™½å­ä¸² "... str SEP SEP str ..."
                     {
                         idx = pos + sep.size();
                         continue;
                     }
 
-                    std::string substr = str.substr(idx, pos - idx);//substr(ÆğÊ¼Î»ÖÃ,×Ó´®³¤¶È);
+                    std::string substr = str.substr(idx, pos - idx);//substr(èµ·å§‹ä½ç½®,å­ä¸²é•¿åº¦);
                     arry->push_back(substr);
                     idx = pos + sep.size();
                     count++;
                 }
 
-                if (idx < str.size()) //²»ÄÜ²åÈëµÄÇé¿ö:×îºóÒ»¶ÎºóÃæ»¹´ø·Ö¸ô·û -- "str SEP"
+                if (idx < str.size()) //ä¸èƒ½æ’å…¥çš„æƒ…å†µ:æœ€åä¸€æ®µåé¢è¿˜å¸¦åˆ†éš”ç¬¦ -- "str SEP"
                 {
-                    arry->push_back(str.substr(idx));//substr(ÆğÊ¼Î»ÖÃ);´ÓÆğÊ¼Î»ÖÃ¿ªÊ¼½ØÈ¡µ½×Ö·û´®Ä©Î²
+                    arry->push_back(str.substr(idx));//substr(èµ·å§‹ä½ç½®);ä»èµ·å§‹ä½ç½®å¼€å§‹æˆªå–åˆ°å­—ç¬¦ä¸²æœ«å°¾
                     count++;
                 }
                 return count;
             }
 
-            bool InitLoad()//Æô¶¯Ê±¼ÓÔØ
+            bool InitLoad()//å¯åŠ¨æ—¶åŠ è½½
             {
-                //1.´ÓÎÄ¼şÖĞ¶ÁÈ¡ËùÓĞÊı¾İ
-                //2.½âÎöÊı¾İ,´æÈë±íÖĞ
+                //1.ä»æ–‡ä»¶ä¸­è¯»å–æ‰€æœ‰æ•°æ®
+                //2.è§£ææ•°æ®,å­˜å…¥è¡¨ä¸­
                 FileUtil fu(_backup_file);
                 std::string body;
                 fu.GetContent(&body);
 
-                //½âÎöÊı¾İ,²¢´æ±í
+                //è§£ææ•°æ®,å¹¶å­˜è¡¨
                 std::vector<std::string> arry;
                 Split(body, "\n", &arry);
                 for (auto& str : arry)
                 {
                     std::vector<std::string> tmp;
                     Split(str, " ", &tmp);
-                    if (tmp.size() != 2) //ËµÃ÷·Ö¸îÓĞÎÊÌâ
+                    if (tmp.size() != 2) //è¯´æ˜åˆ†å‰²æœ‰é—®é¢˜
                     {
-                        continue;//ÉáÆú
+                        continue;//èˆå¼ƒ
                     }
                     _table[tmp[0]] = tmp[1]; //_table[key] = val;
                 }
@@ -97,7 +97,7 @@ namespace ns_cloud_backup
 
             bool Insert(const std::string& key, const std::string& val)
             {
-                //¿Í»§¶ËÊ¹ÓÃµÄµ¥Ïß³Ì,ÎŞÏß³Ì°²È«ÎÊÌâ,ËùÒÔÃ»ÓĞÊ¹ÓÃËø
+                //å®¢æˆ·ç«¯ä½¿ç”¨çš„å•çº¿ç¨‹,æ— çº¿ç¨‹å®‰å…¨é—®é¢˜,æ‰€ä»¥æ²¡æœ‰ä½¿ç”¨é”
                 _table[key] = val;
                 Storage();
                 return true;
@@ -123,8 +123,8 @@ namespace ns_cloud_backup
             }
 
         private:
-            std::string _backup_file;//±¸·İĞÅÏ¢µÄ³Ö¾Ã»¯´æ´¢ÎÄ¼ş
-            std::unordered_map<std::string, std::string> _table;
+            std::string _backup_file;//å¤‡ä»½ä¿¡æ¯çš„æŒä¹…åŒ–å­˜å‚¨æ–‡ä»¶
+            std::unordered_map<std::string, std::string> _table; // <url,tag>
         };
 
     }

@@ -46,6 +46,7 @@ namespace xlog{
           std::cout<<"FileSinK:日志文件输出失败!"<<"\n";
           abort();
         }
+        _ofs.close();
       }
 
       private:
@@ -86,6 +87,7 @@ namespace xlog{
         }
         _ofs.write(data,len);
         _cur_fsize+=len;
+        _ofs.close();
       }
 
     private:
